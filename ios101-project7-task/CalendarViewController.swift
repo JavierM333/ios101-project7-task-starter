@@ -8,18 +8,18 @@ class CalendarViewController: UIViewController {
 
     // The array of all tasks to display in the calendar.
     var tasks: [Task] = []
-
-    // The tasks who's due dates match the current selected calendar date.
     private var selectedTasks: [Task] = []
+    // The tasks who's due dates match the current selected calendar date.
 
     private var calendarView: UICalendarView!
+    private var currentSelectedDate = Date()
 
     @IBOutlet private weak var calendarContainerView: UIView!
     @IBOutlet private weak var tableView: UITableView!
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         // MARK: - Setup the Table View
         // 1. Set table view data source. Needed for standard table view setup:
         //    - tableView(numberOfRowsInSection:) -> How many rows to display
@@ -37,6 +37,7 @@ class CalendarViewController: UIViewController {
         tableView.tableHeaderView = UIView()
         // 3.
         setContentScrollView(tableView)
+        tableView.delegate = self
 
         // MARK: - Create and add Calendar View to view hierarchy
         // For whatever reason, the UICalendarView can't be added via storyboard. so we'll need to create it, add it to the view heirarchy and setup auto layout constraints programmatically.
@@ -86,16 +87,15 @@ class CalendarViewController: UIViewController {
         // ---
 
         // 1.
+        // 1.
         tasks = Task.getTasks()
         // 2.
         let todayComponents = Calendar.current.dateComponents([.year, .month, .weekOfMonth, .day], from: Date())
         // 3.
-        let todayTasks = filterTasks(for: todayComponents)
+        selectedTasks = filterTasks(for: todayComponents)
         // 4.
-        if !todayTasks.isEmpty {
-            // i.
+        if !selectedTasks.isEmpty {
             let selection = calendarView.selectionBehavior as? UICalendarSelectionSingleDate
-            // ii.
             selection?.setSelected(todayComponents, animated: false)
         }
     }
@@ -222,15 +222,16 @@ extension CalendarViewController: UICalendarSelectionSingleDateDelegate {
     // 3. If there are no tasks associated with the selected date, deselect the date by setting the selection to nil
     // 4. Otherwise, if there are associated tasks for the date, reload the table view of selected tasks.
     func dateSelection(_ selection: UICalendarSelectionSingleDate, didSelectDate dateComponents: DateComponents?) {
-        // 1.
-        guard let components = dateComponents else { return }
-        // 2.
+        guard let components = dateComponents,
+              let date = components.date else { return }
+
+        currentSelectedDate = date
         selectedTasks = filterTasks(for: components)
-        // 3.
+
         if selectedTasks.isEmpty {
             selection.setSelected(nil, animated: true)
         }
-        // 4.
+
         tableView.reloadSections(IndexSet(integer: 0), with: .automatic)
     }
 }
@@ -265,6 +266,16 @@ extension CalendarViewController: UITableViewDataSource {
         // 4.
         return cell
     }
+}
+extension CalendarViewController: UITableViewDelegate {
+  func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+    // Toggle the tapped task
+    var task = selectedTasks[indexPath.row]
+    task.isComplete.toggle()
+    task.save()
+    // Refresh tasks, calendar decorations, and table view
+    refreshTasks()
+  }
 }
 
 extension Array where Element: Equatable, Element: Hashable {
