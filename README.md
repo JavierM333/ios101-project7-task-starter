@@ -2,7 +2,7 @@
 
 Submitted by: **Javier Martinez**
 
-**Name of your app** is an app that ... [TODO] 
+**Task Board** is an app that lets you make reminders and view them in calendar
 
 Time spent: **2** hours spent in total
 
